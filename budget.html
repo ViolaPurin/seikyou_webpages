@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スマホで選び隊 - 予算設定</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>スマホで選び隊 🛒</header>
+    <div class="container">
+        <div class="budget-selector">
+            <h2>まず予算を決めよう！</h2>
+            <div class="budget-display"><span id="range-value">700</span>円</div>
+            <input type="range" id="budget-slider" class="budget-range" min="300" max="1000" step="50" value="700">
+            <p style="font-size: 0.85rem; color: #666;">300円〜1000円の間で選べます</p>
+            <button class="btn btn-accent" onclick="setBudget()">この予算で商品を選ぶ ➔</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // 初期表示の連動
+        const slider = document.getElementById('budget-slider');
+        const rangeValue = document.getElementById('range-value');
+        
+        // すでに保存された予算があれば再現
+        if (appState.initialBudget) {
+            slider.value = appState.initialBudget;
+            rangeValue.textContent = appState.initialBudget;
+        }
+
+        slider.addEventListener('input', (e) => {
+            rangeValue.textContent = e.target.value;
+        });
+
+        function setBudget() {
+            appState.initialBudget = parseInt(slider.value);
+            saveState(); // localStorageに保存
+            window.location.href = 'products.html'; // 商品一覧へ遷移
+        }
+    </script>
+    <div style="width: 300px; margin: 0 auto;">
+        <p style="font-size: 0.75rem; color: #666; text-align: center; margin-top: 20px;">
+        ※本イベントは「デザイン思考とロジックモデル」講義の一環として、学生が企画・実施するものです。<br>
+        お問い合わせはこちら↓<br>
+        共創工学部文化情報工学科　講師　土田修平<br>
+        E-mail: tsuchida.shuhei@ocha.ac.jp
+        </p>
+    </body>
+</body>
+</html>

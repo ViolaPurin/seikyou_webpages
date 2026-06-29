@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スマホで選び隊 - 買い物かご</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ポップアップ（モーダル）のスタイル */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: popIn 0.3s ease-out;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin: 15px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <header>スマホで選び隊 🛒</header>
+    <div class="container" style="padding-bottom: 80px;">
+        <h2>買い物かごの確認</h2>
+        <div id="cart-items-container"></div>
+        
+        <div class="cart-summary">
+            <div class="summary-row">
+                <span>設定予算:</span>
+                <span><span id="summary-budget">0</span>円</span>
+            </div>
+            <div class="summary-row" style="color: var(--success-color);">
+                <span>合計金額:</span>
+                <span><span id="summary-total">0</span>円</span>
+            </div>
+            <hr style="margin: 10px 0; border: none; border-top: 1px solid #eee;">
+            <div class="summary-row" id="summary-diff-row">
+                <span>お釣り・残金:</span>
+                <span><span id="summary-remaining">0</span>円</span>
+            </div>
+        </div>
+
+        <button class="btn btn-success" onclick="checkout()">これで決定する！</button>
+        <button class="btn" style="background:#8e8e93;" onclick="window.location.href='products.html'">商品選びに戻る</button>
+    </div>
+
+    <div id="success-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title">シミュレーション完了！</div>
+            <p style="font-weight: bold; color: #333;">このリストを持って生協店舗へGO！</p>
+            
+            <img src="rangers.png" alt="生協へダッシュするレンジャーたち" class="modal-image">
+            
+            <button class="btn" style="margin-top: 10px;" onclick="closeModal()">閉じる</button>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-item" onclick="window.location.href='budget.html'">💰<br>予算変更</button>
+        <button class="nav-item" onclick="window.location.href='products.html'">🛍️<br>商品選定</button>
+        <button class="nav-item active" onclick="window.location.href='cart.html'" style="position: relative;">
+            🛒<br>買い物かご<span id="cart-badge" class="badge">0</span>
+        </button>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function renderCartPage() {
+            updateCommonUI();
+            const cartContainer = document.getElementById('cart-items-container');
+            cartContainer.innerHTML = '';
+
+            const aggregatedCart = {};
+            appState.cart.forEach((item, index) => {
+                if (!aggregatedCart[item.id]) {
+                    aggregatedCart[item.id] = { ...item, count: 0, originalIndices: [] };
+                }
+                aggregatedCart[item.id].count += 1;
+                aggregatedCart[item.id].originalIndices.push(index);
+            });
+
+            const keys = Object.keys(aggregatedCart);
+            if (keys.length === 0) {
+                cartContainer.innerHTML = '<p style="text-align:center; padding:30px; color:#666;">買い物かごは空っぽです。</p>';
+            } else {
+                keys.forEach(id => {
+                    const item = aggregatedCart[id];
+                    const div = document.createElement('div');
+                    div.className = 'cart-item';
+                    const lastIndex = item.originalIndices[item.originalIndices.length - 1];
+                    div.innerHTML = `
+                        <div>
+                            <span style="font-weight:bold;">${item.name}</span>
+                            <span style="font-size:0.9rem; color:#666; margin-left:10px;">${item.price}円 × ${item.count}個</span>
+                        </div>
+                        <button class="remove-btn" onclick="actionRemove(${lastIndex})">1個減らす</button>
+                    `;
+                    cartContainer.appendChild(div);
+                });
+            }
+
+            const total = appState.cart.reduce((sum, item) => sum + item.price, 0);
+            document.getElementById('summary-budget').textContent = appState.initialBudget;
+            document.getElementById('summary-total').textContent = total;
+            
+            const remaining = appState.initialBudget - total;
+            const remainingElement = document.getElementById('summary-remaining');
+            const diffRow = document.getElementById('summary-diff-row');
+            
+            remainingElement.textContent = remaining;
+            if (remaining < 0) {
+                diffRow.style.color = 'var(--primary-color)';
+                document.getElementById('summary-remaining').textContent = `⚠予算オーバー：${Math.abs(remaining)}`;
+            } else {
+                diffRow.style.color = 'var(--text-color)';
+            }
+        }
+
+        function actionRemove(index) {
+            removeFromCart(index);
+            renderCartPage();
+        }
+
+        // 決定ボタンを押したときの処理
+        function checkout() {
+            document.getElementById('success-modal').style.display = 'flex';
+        }
+
+        // ポップアップを閉じる処理
+        function closeModal() {
+            document.getElementById('success-modal').style.display = 'none';
+        }
+
+        renderCartPage();
+    </script>
+</body>
+</html>

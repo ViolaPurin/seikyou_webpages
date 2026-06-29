@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スマホで選び隊 - 組み合わせ選定</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>スマホで選び隊 🛒</header>
+    <div class="container" style="padding-bottom: 80px;">
+        <div class="status-bar">
+            <div>設定予算: <span id="status-initial-budget">0</span>円</div>
+            <div style="color: var(--secondary-color);">現在の残金: <span id="status-remaining">0</span>円</div>
+        </div>
+        <div id="remaining-alert" class="remaining-alert"></div>
+        
+        <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 10px;">
+            <h2>商品の組み合わせをえらぶ</h2>
+            <button class="add-cart-btn" style="background:var(--secondary-color);" onclick="window.location.href='products.html'">一覧に戻る</button>
+        </div>
+
+        <div id="selected-focus-area"></div>
+        <div id="product-list" class="product-list"></div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-item" onclick="window.location.href='budget.html'">💰<br>予算変更</button>
+        <button class="nav-item active" onclick="window.location.href='products.html'">🛍️<br>商品選定</button>
+        <button class="nav-item" onclick="window.location.href='cart.html'" style="position: relative;">
+            🛒<br>買い物かご<span id="cart-badge" class="badge">0</span>
+        </button>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // URLの ?id=X から選択された商品IDを割り出す
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = parseInt(urlParams.get('id'));
+        const mainProduct = mockProducts.find(p => p.id === productId);
+
+        if (!mainProduct) {
+            window.location.href = 'products.html';
+        }
+
+        function render() {
+            updateCommonUI();
+            
+            // 1. メイン商品Aの固定表示
+            const focusArea = document.getElementById('selected-focus-area');
+            focusArea.innerHTML = '';
+            const focusCard = document.createElement('div');
+            focusCard.className = 'product-card focused-main';
+            focusCard.innerHTML = `
+                <div class="product-info">
+                    <div style="font-size:0.8rem; color:var(--primary-color); font-weight:bold;">★ あなたが選んだ商品</div>
+                    <div class="product-name">${mainProduct.name}</div>
+                    <div class="product-meta">
+                        <span class="product-category">${mainProduct.category}</span>
+                        <span class="product-price">${mainProduct.price}円</span>
+                    </div>
+                </div>
+                <div class="action-area">${createCartButtonHtml(mainProduct)}</div>
+            `;
+            
+            // 計算ロジック
+            const count = appState.cart.filter(item => item.id === mainProduct.id).length;
+            const availableLimit = (count > 0) ? appState.remainingBudget : appState.remainingBudget - mainProduct.price;
+
+            const label = document.createElement('div');
+            label.className = 'section-divider';
+            label.textContent = `▼ あなたが選んだ商品と一緒に予算内で買えるもの (残り: ${availableLimit}円)`;
+            focusArea.appendChild(focusCard);
+            focusArea.appendChild(label);
+
+            // 2. 一緒に買えるものリストの描画
+            const listContainer = document.getElementById('product-list');
+            listContainer.innerHTML = '';
+            const displayProducts = mockProducts.filter(item => item.id !== mainProduct.id && item.price <= availableLimit);
+
+            if (displayProducts.length === 0) {
+                listContainer.innerHTML = '<p style="text-align:center; padding:20px; color:#666;">一緒に買える予算内の商品がありません。</p>';
+                return;
+            }
+
+            displayProducts.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.onclick = (e) => {
+                    if (e.target.tagName === 'BUTTON') return;
+                    // 他の商品をタップしたら、その商品を主軸とした詳細URLへ遷移（履歴に残る）
+                    window.location.href = `detail.html?id=${product.id}`;
+                };
+                card.innerHTML = `
+                    <div class="product-info">
+                        <div class="product-name">${product.name}</div>
+                        <div class="product-meta">
+                            <span class="product-category">${product.category}</span>
+                            <span class="product-price">${product.price}円</span>
+                        </div>
+                    </div>
+                    <div class="action-area">${createCartButtonHtml(product)}</div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        // カゴへの追加ラップ関数
+        function actionAddToCart(id) {
+            addToCart(id);
+            render(); // 状態維持して再描画
+        }
+
+        render();
+    </script>
+</body>
+</html>
