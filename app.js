@@ -13,16 +13,16 @@ const mockProducts = [
     { id: 11, name: "焼きたてクッキー", price: 120, category: "スイーツ" }
 ];
 
-// localStorage から状態を復元、なければ初期化
-let appState = JSON.parse(localStorage.getItem('coop_cart_state')) || {
+// 【修正箇所】localStorage から sessionStorage に変更
+let appState = JSON.parse(sessionStorage.getItem('coop_cart_state')) || {
     initialBudget: 700,
     remainingBudget: 700,
     cart: []
 };
 
-// 状態を localStorage に保存する関数
+// 【修正箇所】localStorage から sessionStorage に変更
 function saveState() {
-    localStorage.setItem('coop_cart_state', JSON.stringify(appState));
+    sessionStorage.setItem('coop_cart_state', JSON.stringify(appState));
 }
 
 // 金額の再計算
