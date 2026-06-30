@@ -9,7 +9,8 @@ const mockProducts = [
     { id: 7, name: "生協オリジナルノート (B5)", price: 90, category: "文具" },
     { id: 8, name: "黒ボールペン (0.5mm)", price: 120, category: "文具" },
     { id: 9, name: "デザートシュークリーム", price: 150, category: "スイーツ" },
-    { id: 10, name: "チキンカツサンド", price: 320, category: "軽食" }
+    { id: 10, name: "チキンカツサンド", price: 320, category: "軽食" },
+    { id: 11, name: "焼きたてクッキー", price: 120, category: "スイーツ" }
 ];
 
 // localStorage から状態を復元、なければ初期化
